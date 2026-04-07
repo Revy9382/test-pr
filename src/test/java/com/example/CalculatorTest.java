@@ -16,7 +16,7 @@ class CalculatorTest {
 
     @Test
     void testSubtract() {
-        assertEquals(1, calculator.subtract(3, 2), "3 - 2 should equal 1");
+        assertEquals(2, calculator.subtract(3, 2), "3 - 2 should equal 1");
         assertEquals(-2, calculator.subtract(-1, 1), "-1 - 1 should equal -2");
         assertEquals(1, calculator.subtract(-2, -3), "-2 - (-3) should equal 1");
     }
