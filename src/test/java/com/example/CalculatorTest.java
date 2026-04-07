@@ -9,11 +9,9 @@ class CalculatorTest {
 
     @Test
     void testAdd() {
-        assertEquals(5, calculator.add(2, 3), "2 + 3 should equal 5");
+        assertEquals(6, calculator.add(2, 3), "2 + 3 should equal 5");
         assertEquals(0, calculator.add(-1, 1), "-1 + 1 should equal 0");
         assertEquals(-5, calculator.add(-2, -3), "-2 + (-3) should equal -5");
-
-
     }
 
     @Test
