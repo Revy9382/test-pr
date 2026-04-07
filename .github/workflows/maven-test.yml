@@ -37,15 +37,21 @@ jobs:
         cache: maven
 
     # 步骤3：运行 Maven 测试并生成 JaCoCo 覆盖率报告
-    # clean：清理之前编译的文件
-    # verify：执行测试并完成报告生成
+    # 即使测试失败也继续执行后续步骤，以便上传测试结果和覆盖率报告
     - name: Run Maven Verify
-      run: mvn clean verify
+      id: maven_verify
+      continue-on-error: true
+      run: mvn clean verify -Dmaven.test.failure.ignore=true
 
     # 步骤4：将 JaCoCo 根目录入口改为带 PR 编号的 HTML 文件
     - name: Create PR-specific JaCoCo Report Entry
       if: always() && github.event_name == 'pull_request'
-      run: mv target/site/jacoco/index.html target/site/jacoco/PR${{ github.event.pull_request.number }}.html
+      run: |
+        if [ -f target/site/jacoco/index.html ]; then
+          mv target/site/jacoco/index.html target/site/jacoco/PR${{ github.event.pull_request.number }}.html
+        else
+          echo "JaCoCo index.html was not generated."
+        fi
 
     # 步骤5：上传测试结果
     # if: always() 表示无论前面步骤成功或失败，都执行此步骤
@@ -58,6 +64,7 @@ jobs:
         name: test-results
         # Maven 测试报告的默认输出路径
         path: target/surefire-reports/
+        if-no-files-found: warn
 
     # 步骤6：上传 JaCoCo HTML 报告目录，便于在 Actions 中下载查看
     - name: Upload JaCoCo Report
@@ -66,3 +73,18 @@ jobs:
       with:
         name: jacoco-report
         path: target/site/jacoco/
+        if-no-files-found: warn
+
+    # 步骤7：在产物上传完成后，如果 Maven 构建失败或测试失败，则将工作流置为失败
+    - name: Fail Workflow If Maven Or Tests Failed
+      if: always()
+      run: |
+        if [ "${{ steps.maven_verify.outcome }}" = "failure" ]; then
+          echo "Maven verify step failed."
+          exit 1
+        fi
+
+        if find target/surefire-reports -name 'TEST-*.xml' -exec grep -E 'failures="[1-9][0-9]*"|errors="[1-9][0-9]*"' {} + >/dev/null 2>&1; then
+          echo "Test failures detected in Surefire reports."
+          exit 1
+        fi
