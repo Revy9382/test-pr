@@ -6,7 +6,7 @@ on:
   # 监听 Pull Request 事件
   pull_request:
     # 只有当 PR 的目标分支是 main 或 master 时才触发
-    branches: [ main, master ]
+    branches: [ main ]
 
 # 定义要执行的任务
 jobs:
@@ -36,13 +36,18 @@ jobs:
         # 启用 Maven 依赖缓存，加速后续构建
         cache: maven
 
-    # 步骤3：运行 Maven 测试
+    # 步骤3：运行 Maven 测试并生成 JaCoCo 覆盖率报告
     # clean：清理之前编译的文件
-    # test：编译并运行所有单元测试
-    - name: Run Maven Tests
-      run: mvn clean test
+    # verify：执行测试并完成报告生成
+    - name: Run Maven Verify
+      run: mvn clean verify
 
-    # 步骤4：上传测试结果
+    # 步骤4：为当前 PR 生成带编号的 JaCoCo HTML 入口文件
+    - name: Create PR-specific JaCoCo Report Entry
+      if: always() && github.event_name == 'pull_request'
+      run: cp target/site/jacoco/index.html target/site/jacoco/PR${{ github.event.pull_request.number }}.html
+
+    # 步骤5：上传测试结果
     # if: always() 表示无论前面步骤成功或失败，都执行此步骤
     # 这样即使测试失败，也能查看测试报告
     - name: Upload Test Results
@@ -53,3 +58,11 @@ jobs:
         name: test-results
         # Maven 测试报告的默认输出路径
         path: target/surefire-reports/
+
+    # 步骤6：上传 JaCoCo HTML 报告目录，便于在 Actions 中下载查看
+    - name: Upload JaCoCo Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: jacoco-report
+        path: target/site/jacoco/
