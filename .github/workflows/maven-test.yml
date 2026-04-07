@@ -42,10 +42,10 @@ jobs:
     - name: Run Maven Verify
       run: mvn clean verify
 
-    # 步骤4：为当前 PR 生成带编号的 JaCoCo HTML 入口文件
+    # 步骤4：将 JaCoCo 根目录入口改为带 PR 编号的 HTML 文件
     - name: Create PR-specific JaCoCo Report Entry
       if: always() && github.event_name == 'pull_request'
-      run: cp target/site/jacoco/index.html target/site/jacoco/PR${{ github.event.pull_request.number }}.html
+      run: mv target/site/jacoco/index.html target/site/jacoco/PR${{ github.event.pull_request.number }}.html
 
     # 步骤5：上传测试结果
     # if: always() 表示无论前面步骤成功或失败，都执行此步骤
